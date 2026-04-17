@@ -1,0 +1,5 @@
+#+title: Notes
+#+filetags: :reference:test:
+
+* Project Alpha
+Some note text.

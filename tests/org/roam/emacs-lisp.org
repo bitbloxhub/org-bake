@@ -1,0 +1,29 @@
+#+title: Emacs Lisp Basics
+#+filetags: :roam:emacs:lisp:
+
+:PROPERTIES:
+:ID:       4f7f3f12-6d0a-4f77-9a8f-1b8bfc1d6101
+:ROAM_ALIASES: "elisp" "Emacs Lisp"
+:END:
+
+* Why this exists
+Quick scratch note for testing Org exports and roam-style metadata.
+
+** Eval loop
+:PROPERTIES:
+:ID:       6a7bf262-0adf-4a79-9283-98445b2d7b2a
+:END:
+Use `M-:` and `eval-defun` for quick iteration while testing.
+
+* Links
+- Related project note: [[id:b38eae22-7c98-4faa-8f52-1f7d2b097602][org-bake]]
+- Related concept: [[id:8c9fd89c-3f59-49d9-86f6-9e73267d8b07][Async indexing]]
+- Subheading link: [[file:org-bake.org::*Tasks][org-bake / Tasks]]
+- Subheading link: [[file:zettelkasten-flow.org::*Permanent note][Zettelkasten / Permanent note]]
+- Subheading ID link: [[id:e31137cf-502d-49a8-bf53-c91b5ebf2ca4][org-bake / Materialization startup]]
+
+* Snippet
+#+begin_src emacs-lisp
+(defun test-elisp-note ()
+  (message "hello from test note"))
+#+end_src

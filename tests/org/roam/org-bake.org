@@ -1,0 +1,29 @@
+#+title: org-bake
+#+filetags: :roam:project:org:
+
+:PROPERTIES:
+:ID:       b38eae22-7c98-4faa-8f52-1f7d2b097602
+:ROAM_REFS: https://example.invalid/org-bake
+:END:
+
+* Summary
+org-bake indexes Org files and produces JSON artifacts.
+
+** Materialization startup
+:PROPERTIES:
+:ID:       e31137cf-502d-49a8-bf53-c91b5ebf2ca4
+:END:
+Missing materialization outputs should be recreated on startup scans.
+
+* Related
+- [[id:4f7f3f12-6d0a-4f77-9a8f-1b8bfc1d6101][Emacs Lisp Basics]]
+- [[id:8c9fd89c-3f59-49d9-86f6-9e73267d8b07][Async indexing]]
+- [[id:95e6f9d8-62e0-4a85-bf56-07d6a95914f7][Capture workflow]]
+- Subheading link: [[file:emacs-lisp.org::*Eval loop][Emacs Lisp / Eval loop]]
+- Subheading link: [[file:async-indexing.org::*Queue lifecycle][Async indexing / Queue lifecycle]]
+- Subheading ID link: [[id:6a7bf262-0adf-4a79-9283-98445b2d7b2a][Emacs Lisp / Eval loop]]
+- Subheading ID link: [[id:1d58f994-27d4-44d4-aef7-2f92f6f03f88][Async indexing / Queue lifecycle]]
+
+* Tasks
+** TODO Add more materializers
+DEADLINE: <2026-05-01 Thu>

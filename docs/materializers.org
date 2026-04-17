@@ -1,0 +1,141 @@
+#+title: Built-in Materializers
+
+This file documents built-in materializer outputs.
+
+All materialization files are written as:
+- path: =materializations/<name>-<version>.json=
+- envelope keys:
+  - =schema_version=
+  - =type= (always ="materialization"=)
+  - =name=
+  - =version=
+  - =workspace=
+  - =generated_at=
+  - =data=
+
+* ids (v1)
+Description: map Org =:ID:= values to =document_id=.
+
+=data= shape:
+#+begin_src json
+{
+  "ORG_ID": "document_id"
+}
+#+end_src
+
+Notes:
+- Includes file-level =ID= and headline drawer =ID=.
+- Values point to document-level id, not heading-level id.
+
+* tags (v1)
+Description: map file tags to document ids.
+
+=data= shape:
+#+begin_src json
+{
+  "tag": ["document_id", "document_id"]
+}
+#+end_src
+
+Notes:
+- Reads file tags from exported document properties.
+- Keys come from =filetags= or =file_tags= in exported JSON.
+
+* filepaths (v1)
+Description: map document id to source file path.
+
+=data= shape:
+#+begin_src json
+{
+  "document_id": "/absolute/path/to/file.org"
+}
+#+end_src
+
+* backlinks (v1)
+Description: edge list of inter-document links discovered in AST link nodes.
+
+=data= shape:
+#+begin_src json
+{
+  "edge_list": [
+    {
+      "source_id": "document_id",
+      "target_id": "document_id",
+      "via": "id|file",
+      "count": 1
+    }
+  ]
+}
+#+end_src
+
+Notes:
+- =via="id"=: from =id:= Org links resolved through =ids= mapping.
+- =via="file"=: from =file:= links resolved relative to source file directory.
+- Self-links (same source and target document) are excluded.
+- Duplicate links are counted in =count=.
+
+* headings (v1)
+Description: flattened heading rows for all headlines.
+
+=data= shape:
+#+begin_src json
+[
+  {
+    "document_id": "document_id",
+    "source_path": "/absolute/path/to/file.org",
+    "source_id": "headline-ID-or-null",
+    "begin": 123,
+    "level": 2,
+    "title": "Heading title",
+    "todo": "TODO-or-null",
+    "priority": "A-or-null",
+    "tags": ["tag1", "tag2"]
+  }
+]
+#+end_src
+
+Notes:
+- One row per headline.
+- =source_id= is headline drawer =ID= when present.
+- Rows without =source_id= are still kept.
+
+* agenda-items (v1)
+Description: flattened actionable/scheduled/deadline heading rows for agenda rendering.
+
+=data= shape:
+#+begin_src json
+[
+  {
+    "document_id": "document_id",
+    "source_path": "/absolute/path/to/file.org",
+    "source_id": "headline-ID-or-null",
+    "begin": 123,
+    "level": 2,
+    "title": "Heading title",
+    "todo": "TODO-or-null",
+    "priority": "A-or-null",
+    "scheduled": "<2026-04-18 Fri>-or-null",
+    "deadline": "<2026-05-01 Thu>-or-null",
+    "tags": ["tag1", "tag2"]
+  }
+]
+#+end_src
+
+Inclusion rule:
+- row is included when headline has any of:
+  - TODO keyword
+  - scheduled timestamp
+  - deadline timestamp
+
+* Adding custom materializers
+Register with =org-bake-register-materializer= and provide:
+- =:version= string
+- =:builder= function symbol
+- optional =:feature= and =:description=
+
+Builder signature:
+#+begin_src emacs-lisp
+(builder workspace documents) => json-serializable-data
+#+end_src
+
+The builder runs in child Emacs and must be loadable via symbol.

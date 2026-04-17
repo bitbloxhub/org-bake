@@ -1,0 +1,24 @@
+#+title: Async indexing
+#+filetags: :roam:architecture:async:
+:PROPERTIES:
+:ID:       8c9fd89c-3f59-49d9-86f6-9e73267d8b07
+:END:
+
+* Idea
+Background jobs keep exports and materializations fresh.
+
+** Queue lifecycle
+:PROPERTIES:
+:ID:       1d58f994-27d4-44d4-aef7-2f92f6f03f88
+:END:
+Jobs move queued -> running -> complete in async workers.
+
+* Tradeoffs
+- Faster UI response
+- More moving parts in job queue state
+
+* Backlinks
+- [[id:b38eae22-7c98-4faa-8f52-1f7d2b097602][org-bake]]
+- [[id:2a6dbb77-fd4d-4d16-993e-6da3f0f53b6d][Zettelkasten flow]]
+- Subheading link: [[file:org-bake.org::*Materialization startup][org-bake / Materialization startup]]
+- Subheading ID link: [[id:e31137cf-502d-49a8-bf53-c91b5ebf2ca4][org-bake / Materialization startup]]

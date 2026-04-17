@@ -1,0 +1,26 @@
+#+title: Zettelkasten flow
+#+filetags: :roam:method:notes:
+
+:PROPERTIES:
+:ID:       2a6dbb77-fd4d-4d16-993e-6da3f0f53b6d
+:ROAM_ALIASES: "slip-box flow"
+:END:
+
+* Stages
+** Fleeting note
+Raw thought, minimal structure.
+
+** Literature note
+Extract from source with citation.
+
+** Permanent note
+:PROPERTIES:
+:ID:       c4d23624-1eec-4fe9-a3e2-3546e24ad530
+:END:
+Own words, linked to existing graph.
+
+* Links
+- [[id:95e6f9d8-62e0-4a85-bf56-07d6a95914f7][Capture workflow]]
+- [[id:4f7f3f12-6d0a-4f77-9a8f-1b8bfc1d6101][Emacs Lisp Basics]]
+- Subheading ID link: [[id:46d7b5df-a3c4-4bb1-9b67-6ae3c98cf16f][Capture workflow / Inbox capture]]
+- Subheading ID link: [[id:1d58f994-27d4-44d4-aef7-2f92f6f03f88][Async indexing / Queue lifecycle]]

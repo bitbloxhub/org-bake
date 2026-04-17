@@ -1,0 +1,43 @@
+#+title: Store file formats
+
+org-bake workspace store has three main parts:
+- =documents/*.json=
+- =materializations/*.json=
+- =meta.json=
+
+* documents/<id>.json
+One file per source Org document.
+
+Top-level keys:
+- =schema_version= :: org-bake schema version
+- =type= :: always ="document"=
+- =id= :: stable document id (derived from source path)
+- =workspace= :: workspace name
+- =source= :: source file snapshot
+- =export= :: export metadata
+- =document= :: exported Org AST from =ox-json=
+
+** source object
+- =path= :: absolute source file path
+- =mtime= :: source mtime (epoch seconds)
+- =size= :: source file byte size
+
+** export object
+- =exported_at= :: export timestamp (epoch seconds)
+- =format_version= :: export format version used for staleness checks
+
+** document object
+Raw =ox-json= AST payload. This is the canonical input for all materializers.
+
+* materializations/<name>-<version>.json
+See [[file:materializers.org][materializers.org]] for full envelope + data shapes.
+
+* meta.json
+Top-level keys:
+- =schema_version=
+- =workspace=
+- =roots=
+- =store_root=
+- =created_at=
+- =last_scan_at=
+- =document_count=

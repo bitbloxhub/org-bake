@@ -1,0 +1,9 @@
+#+title: Roadmap
+#+filetags: :planning:team:
+
+* NEXT Prepare Q3 plan!
+SCHEDULED: <2026-04-18 Fri>
+
+* TODO Capture export shape
+* TODO Something else!
+* TODO Another thing

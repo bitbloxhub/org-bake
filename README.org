@@ -1,0 +1,62 @@
+#+title: org-bake
+
+org-bake keeps Org workspaces indexed in background, writes stable JSON artifacts, and builds fast materialized views (ids, backlinks, agenda rows, etc).
+
+* Who this is for
+- You keep many Org files
+- You want async indexing/export instead of blocking scans
+- You want generated agenda views and fast ID/backlink lookups
+
+* Install
+Load package and set at least one workspace.
+#+begin_src emacs-lisp
+(use-package org-bake
+  :load-path "~/path/to/org-bake"
+  :after org
+  :custom
+  (org-bake-workspaces
+   '((main :roots ("~/org"))))
+  :config
+  (org-bake-start-indexer))
+#+end_src
+Workspace format:
+#+begin_src emacs-lisp
+(NAME :roots (DIR...) [:store-dir DIR])
+#+end_src
+
+* Day-to-day usage
+Main commands:
+- =M-x org-bake-start-indexer= :: start background indexing and file watches
+- =M-x org-bake-stop-indexer= :: stop indexer and watchers
+- =M-x org-bake-refresh-workspace= :: scan workspace and export stale docs
+- =M-x org-bake-rebake-workspace= :: force re-export all docs in workspace
+- =M-x org-bake-rematerialize-workspace= :: force rerun all materializers
+
+* Agenda workflow
+Generate and use workspace agenda file:
+- =M-x org-bake-use-workspace-agenda-file=
+In Org agenda buffer:
+- =o= opens source entry from generated agenda line
+- =RET= opens source entry too (when =org-bake-agenda-remap-ret= is non-nil)
+- =g= regenerates org-bake agenda file and refreshes agenda
+
+* What gets stored
+Per workspace store dir (XDG data dir by default):
+- =documents/*.json= :: exported Org JSON per source doc
+- =materializations/<name>-<version>.json= :: materialized indexes
+- =meta.json= :: workspace metadata
+See [[file:docs/store-format.org][docs/store-format.org]] for full store file shapes.
+
+* Built-in materializers
+- =ids= :: Org =:ID:= -> document id
+- =tags= :: filetag -> document ids
+- =filepaths= :: document id -> source path
+- =backlinks= :: edge list with link type/count
+- =headings= :: flattened heading rows
+- =agenda-items= :: actionable/scheduled/deadline heading rows
+See [[file:docs/materializers.org][docs/materializers.org]] for exact output structures.
+
+* Notes
+- Exporter is =ox-json= only
+- Materializers build from stored document JSON only
+- Indexing is async and filesystem-watch driven

@@ -1,0 +1,23 @@
+#+title: Capture workflow
+#+filetags: :roam:workflow:capture:
+
+:PROPERTIES:
+:ID:       95e6f9d8-62e0-4a85-bf56-07d6a95914f7
+:ROAM_ALIASES: "quick capture"
+:END:
+
+* Flow
+1. Capture idea in inbox
+2. Refine into permanent note
+3. Add links and tags
+
+** Inbox capture
+:PROPERTIES:
+:ID:       46d7b5df-a3c4-4bb1-9b67-6ae3c98cf16f
+:END:
+Start fast, cleanup later.
+
+* References
+- [[id:2a6dbb77-fd4d-4d16-993e-6da3f0f53b6d][Zettelkasten flow]]
+- [[id:b38eae22-7c98-4faa-8f52-1f7d2b097602][org-bake]]
+- Subheading ID link: [[id:c4d23624-1eec-4fe9-a3e2-3546e24ad530][Zettelkasten / Permanent note]]
