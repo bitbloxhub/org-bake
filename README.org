@@ -9,6 +9,9 @@ org-bake keeps Org workspaces indexed in background, writes stable JSON artifact
 
 * Install
 Load package and set at least one workspace.
+Requires these Emacs packages:
+- =async= (aka emacs-async)
+- =ox-json= from [[https://github.com/bitbloxhub/ox-json/tree/toplevel-properties][bitbloxhub/ox-json @ toplevel-properties]]
 #+begin_src emacs-lisp
 (use-package org-bake
   :load-path "~/path/to/org-bake"
