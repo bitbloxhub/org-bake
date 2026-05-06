@@ -3,7 +3,7 @@
 ;; Author: bitbloxhub
 ;; Maintainer: bitbloxhub
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "29.1") (org "9.6") (async "1.9.9") (ox-json "0"))
+;; Package-Requires: ((emacs "29.1") (org "9.6") (async "1.9.9") (ox-json "1"))
 ;; Keywords: outlines, tools, data
 ;; URL: https://github.com/bitbloxhub/org-bake
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -520,13 +520,16 @@ Return non-nil when a matching headline is found."
         (user-error
          "No source metadata on generated agenda entry"))))))
 
-(with-eval-after-load 'org-agenda
+(defun org-bake--setup-agenda-keys ()
+  "Install org-bake agenda keybindings in current `org-agenda-mode' buffer."
   (define-key
    org-agenda-mode-map (kbd "o") #'org-bake-agenda-open-source)
   (when org-bake-agenda-remap-ret
     (define-key
      org-agenda-mode-map (kbd "RET") #'org-bake-agenda-open-source))
   (define-key org-agenda-mode-map (kbd "g") #'org-bake-agenda-redo))
+
+(add-hook 'org-agenda-mode-hook #'org-bake--setup-agenda-keys)
 
 (defun org-bake--org-id-find-id-file-advice (orig-fn id)
   "Advice for `org-id-find-id-file' using ORIG-FN and materialized ID fallback."
@@ -535,7 +538,9 @@ Return non-nil when a matching headline is found."
         (org-bake--materialized-source-path-for-id id))))
 
 (defun org-bake--org-id-find-advice (orig-fn id &optional markerp)
-  "Advice for `org-id-find' using ORIG-FN and materialized ID fallback."
+  "Advice for `org-id-find' using ORIG-FN, ID, and optional MARKERP.
+
+Falls back to materialized ID lookup."
   (or (funcall orig-fn id markerp)
       (when org-bake-org-id-use-materialized-ids
         (let ((path (org-bake--materialized-source-path-for-id id)))
@@ -548,18 +553,16 @@ Return non-nil when a matching headline is found."
 (defun org-bake-enable-org-id-materialized-resolution ()
   "Enable org-bake fallback for `org-id-find-id-file'."
   (interactive)
-  (with-eval-after-load 'org-id
-    (unless (advice-member-p
-             #'org-bake--org-id-find-id-file-advice
-             #'org-id-find-id-file)
-      (advice-add
-       #'org-id-find-id-file
-       :around #'org-bake--org-id-find-id-file-advice))
-    (unless (advice-member-p
-             #'org-bake--org-id-find-advice #'org-id-find)
-      (advice-add
-       #'org-id-find
-       :around #'org-bake--org-id-find-advice)))
+  (require 'org-id)
+  (unless (advice-member-p
+           #'org-bake--org-id-find-id-file-advice
+           #'org-id-find-id-file)
+    (advice-add
+     #'org-id-find-id-file
+     :around #'org-bake--org-id-find-id-file-advice))
+  (unless (advice-member-p
+           #'org-bake--org-id-find-advice #'org-id-find)
+    (advice-add #'org-id-find :around #'org-bake--org-id-find-advice))
   (setq org-bake--org-id-materialized-advice-enabled t))
 
 (defun org-bake-disable-org-id-materialized-resolution ()
@@ -580,7 +583,7 @@ Return non-nil when a matching headline is found."
 
 (defun org-bake--workspaces-watcher
     (_symbol new-value operation _where)
-  "Schedule startup indexing when workspace config changes.
+  "Schedule startup indexing after workspace config change.
 
 NEW-VALUE and OPERATION come from `add-variable-watcher'."
   (when (and (not (memq operation '(let unlet))) new-value)

@@ -1,5 +1,8 @@
 ;;; org-bake-project.el --- Project discovery and configuration for org-bake  -*- lexical-binding: t; -*-
 
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "29.1") (org "9.6") (async "1.9.9") (ox-json "1"))
+;; URL: https://github.com/bitbloxhub/org-bake
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;;; Commentary:
@@ -90,7 +93,7 @@ Signal an error if NAME is unknown."
      (org-bake-project-roots name))))
 
 (defun org-bake-project-root-for-path (name path)
-  "Return the workspace root in NAME that contains PATH, or nil."
+  "Return workspace root in NAME that can contain PATH, or nil."
   (let ((abs-path (expand-file-name path)))
     (seq-find
      (lambda (root) (file-in-directory-p abs-path root))
@@ -115,6 +118,7 @@ Signal an error if PATH is not inside any root."
                0 20)))
 
 (defun org-bake-project-document-path (name path)
+  "Return document JSON path for PATH in workspace NAME."
   (expand-file-name (format "documents/%s.json"
                             (org-bake-project-document-id name path))
                     (org-bake-project-store-dir name)))
@@ -149,6 +153,7 @@ Signal an error if PATH is not inside any root."
    :files (org-bake-project-files name)))
 
 (defun org-bake-project-jobs (name)
+  "Return export job plists for all indexable Org files in workspace NAME."
   (mapcar
    (lambda (path)
      (list

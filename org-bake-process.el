@@ -1,5 +1,8 @@
 ;;; org-bake-process.el --- Async process support for org-bake  -*- lexical-binding: t; -*-
 
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "29.1") (org "9.6") (async "1.9.9") (ox-json "1"))
+;; URL: https://github.com/bitbloxhub/org-bake
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;;; Commentary:
@@ -24,13 +27,15 @@
 (defvar org-bake-process--job-counter 0
   "Monotonic job counter for lightweight in-memory job ids.")
 
-(defvar org-bake-materializers nil
+(defvar org-bake-process-materializers nil
   "Registered org-bake materializers.
 
-Each entry is of the form:
-  (NAME :version STRING :builder SYMBOL [:feature SYMBOL] [:description STRING]).")
+Each entry form:
+  (NAME . PROPERTIES).")
 
-(defvar org-bake--workspace-materialize-timers nil)
+(defvar org-bake-process--workspace-materialize-timers nil)
+
+(defvar org-bake-store-schema-version)
 
 (defun org-bake-process--next-job-id ()
   "Return fresh in-memory job id."
@@ -83,7 +88,9 @@ When WORKSPACE or KIND is nil, that filter is skipped."
    org-bake-process-queue))
 
 (defun org-bake-process-job-active-p (workspace kind document-id)
-  "Return non-nil when matching queued or running job already exists."
+  "Return non-nil when matching WORKSPACE KIND DOCUMENT-ID job exists.
+
+Both queued and running jobs count as existing."
   (seq-some
    (lambda (job)
      (and (eq workspace (plist-get job :workspace))
@@ -103,35 +110,35 @@ When WORKSPACE or KIND is nil, that filter is skipped."
     (error "Invalid materializer name: %S" name))))
 
 
-(defun org-bake-register-materializer (name &rest properties)
+(defun org-bake-process-register-materializer (name &rest properties)
   "Register materializer NAME with PROPERTIES.
 
-Required PROPERTIES keys are `:version' and `:builder'. Optional keys are
-`:feature' and `:description'. Builder should be a function symbol that
+Required PROPERTIES keys are `:version' and `:builder'.  Optional keys are
+`:feature' and `:description'.  Builder should be a function symbol that
 accepts WORKSPACE and DOCUMENTS, returning JSON-serializable data."
   (setq name (org-bake-process--normalize-materializer-name name))
   (unless (plist-get properties :version)
     (error "Materializer %S missing :version" name))
   (unless (plist-get properties :builder)
     (error "Materializer %S missing :builder" name))
-  (setq org-bake-materializers
-        (assq-delete-all name org-bake-materializers))
-  (push (cons name properties) org-bake-materializers)
+  (setq org-bake-process-materializers
+        (assq-delete-all name org-bake-process-materializers))
+  (push (cons name properties) org-bake-process-materializers)
   name)
 
 (defun org-bake-process-materializer-entry (name)
   "Return registered materializer entry for NAME."
   (setq name (org-bake-process--normalize-materializer-name name))
-  (or (assq name org-bake-materializers)
+  (or (assq name org-bake-process-materializers)
       (error "Unknown org-bake materializer: %S" name)))
 
 (defun org-bake-process-materializer-names ()
   "Return registered materializer names."
-  (mapcar #'car org-bake-materializers))
+  (mapcar #'car org-bake-process-materializers))
 
 (defun org-bake-process-materializer-active-p
     (workspace materializer version)
-  "Return non-nil when materializer job already queued or running."
+  "Return non-nil when WORKSPACE MATERIALIZER VERSION job is active."
   (seq-some
    (lambda (job)
      (and (eq workspace (plist-get job :workspace))
@@ -230,7 +237,7 @@ queues every current document not already queued or running."
 
 (defun org-bake-process-materialization-exists-p
     (workspace materializer version)
-  "Return non-nil when materialization output exists."
+  "Return non-nil when WORKSPACE MATERIALIZER VERSION output exists."
   (file-exists-p
    (org-bake-process-materialization-path
     workspace materializer version)))
@@ -280,8 +287,9 @@ running.  Otherwise enqueue only materializers whose output file is missing."
     (workspace-name job-specs documents-dir)
   "Worker-side backend for async batch materialization.
 
-JOB-SPECS is a list of plists with keys `:materializer', `:version',
-`:builder', and `:feature'."
+WORKSPACE-NAME names workspace.  JOB-SPECS is list of plists with keys
+`:materializer', `:version', `:builder', and `:feature'.
+DOCUMENTS-DIR points to exported documents."
   (require 'org-bake-store)
   (dolist (job-spec job-specs)
     (let ((feature (plist-get job-spec :feature)))
@@ -298,7 +306,7 @@ JOB-SPECS is a list of plists with keys `:materializer', `:version',
               (version (plist-get job-spec :version))
               (builder (plist-get job-spec :builder))
               (data (funcall builder workspace documents)))
-         `((schema_version . ,org-bake-schema-version)
+         `((schema_version . ,org-bake-store-schema-version)
            (type . "materialization")
            (name . ,(symbol-name materializer))
            (version . ,version)
@@ -358,6 +366,7 @@ materialization in JOBS order."
     (&optional workspace callback)
   "Start queued materializer jobs for WORKSPACE in one child process.
 
+When CALLBACK is non-nil, call it for each completed job.
 When a materialize job is already running for WORKSPACE, this is a no-op.
 Return jobs started by this dispatch call."
   (let* ((running
@@ -391,19 +400,22 @@ Return jobs started by this dispatch call."
 
 (defun org-bake-process-run-materializers
     (&optional workspace callback)
-  "Start queued materializer jobs for WORKSPACE and return newly started jobs."
+  "Start queued materializer jobs for WORKSPACE and return newly started jobs.
+
+Optional CALLBACK runs for each completed job."
   (org-bake-process--dispatch-materializer-jobs workspace callback))
 
 (defun org-bake-process--workspace-materialize-timer (workspace)
   "Return pending materialize timer for WORKSPACE, or nil."
-  (alist-get workspace org-bake--workspace-materialize-timers))
+  (alist-get
+   workspace org-bake-process--workspace-materialize-timers))
 
 (defun org-bake-process-clear-materialize-timers ()
   "Cancel all pending materialize timers."
-  (dolist (entry org-bake--workspace-materialize-timers)
+  (dolist (entry org-bake-process--workspace-materialize-timers)
     (when (timerp (cdr entry))
       (cancel-timer (cdr entry))))
-  (setq org-bake--workspace-materialize-timers nil))
+  (setq org-bake-process--workspace-materialize-timers nil))
 
 (defun org-bake-process-schedule-workspace-materialization
     (workspace &optional force)
@@ -417,14 +429,14 @@ When FORCE is non-nil, rebuild all registered materializers."
             (max 0.0 (or org-bake-materialize-debounce-seconds 0.5))
             nil
             (lambda ()
-              (setq org-bake--workspace-materialize-timers
+              (setq org-bake-process--workspace-materialize-timers
                     (assq-delete-all
                      workspace
-                     org-bake--workspace-materialize-timers))
+                     org-bake-process--workspace-materialize-timers))
               (org-bake-process-enqueue-materializers workspace force)
               (org-bake-process-run-materializers workspace)))))
       (push (cons workspace timer)
-            org-bake--workspace-materialize-timers))))
+            org-bake-process--workspace-materialize-timers))))
 
 (provide 'org-bake-process)
 ;;; org-bake-process.el ends here

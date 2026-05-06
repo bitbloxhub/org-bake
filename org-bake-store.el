@@ -1,5 +1,8 @@
 ;;; org-bake-store.el --- Derived document store for org-bake  -*- lexical-binding: t; -*-
 
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "29.1") (org "9.6") (async "1.9.9") (ox-json "1"))
+;; URL: https://github.com/bitbloxhub/org-bake
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;;; Commentary:
@@ -20,7 +23,7 @@
 (require 'org-bake-project)
 (require 'subr-x)
 
-(defvar org-bake-schema-version 1
+(defvar org-bake-store-schema-version 1
   "Current on-disk schema version for org-bake.")
 
 (defvar org-bake-export-format-version)
@@ -117,7 +120,7 @@ Supported PROPERTIES keys are `:created-at', `:last-scan-at', and
               (org-bake-store--json-get existing "document_count")
               0))
          (meta
-          `((schema_version . ,org-bake-schema-version)
+          `((schema_version . ,org-bake-store-schema-version)
             (workspace . ,(symbol-name name))
             (roots . ,(vconcat (org-bake-project-roots name)))
             (store_root . ,(org-bake-project-store-dir name))
@@ -154,7 +157,8 @@ Supported PROPERTIES keys are `:created-at', `:last-scan-at', and
     (or (null document)
         (org-bake-store-source-stale-p
          stored-source (plist-get job :source-path))
-        (not (equal stored-schema-version org-bake-schema-version))
+        (not
+         (equal stored-schema-version org-bake-store-schema-version))
         (not
          (equal
           stored-format-version org-bake-export-format-version)))))

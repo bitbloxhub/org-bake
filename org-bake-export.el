@@ -1,5 +1,8 @@
 ;;; org-bake-export.el --- Org export pipeline for org-bake  -*- lexical-binding: t; -*-
 
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "29.1") (org "9.6") (async "1.9.9") (ox-json "1"))
+;; URL: https://github.com/bitbloxhub/org-bake
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;;; Commentary:
@@ -26,17 +29,21 @@
 (defconst org-bake-export-format-version 1
   "Version for org-bake export wrapper metadata.")
 
+(defvar org-bake-store-schema-version)
+
 (defun org-bake-export--source-metadata (source-path)
   "Return source metadata plist for SOURCE-PATH."
   (org-bake-store-source-state source-path))
 
 (defun org-bake-export--normalized-document
     (job exported &optional exported-at)
-  "Return normalized stored document for JOB from EXPORTED ox-json tree."
+  "Return normalized stored document for JOB from EXPORTED ox-json tree.
+
+Optional EXPORTED-AT overrides export timestamp."
   (let* ((source-path (plist-get job :source-path))
          (workspace (plist-get job :workspace))
          (state (org-bake-export--source-metadata source-path)))
-    `((schema_version . ,org-bake-schema-version)
+    `((schema_version . ,org-bake-store-schema-version)
       (type . "document")
       (id . ,(plist-get job :document-id))
       (workspace . ,(symbol-name workspace))
@@ -56,7 +63,9 @@
 
 (defun org-bake-export--collect-tree-properties-without-id-resolution
     (data info)
-  "Collect export tree properties without org-id lookups for `id:' links."
+  "Collect export tree properties from DATA and INFO without org-id lookups.
+
+This avoids `org-id' lookups for `id:' links."
   (setq info (plist-put info :parse-tree data))
   (setq
    info
@@ -104,7 +113,10 @@
 (defun org-bake-export-document-async-backend
     (source-path
      workspace-name document-id schema-version format-version)
-  "Worker-side backend for async Org export."
+  "Worker-side backend for async Org export.
+
+SOURCE-PATH is exported for WORKSPACE-NAME into DOCUMENT-ID using
+SCHEMA-VERSION and FORMAT-VERSION metadata."
   (require 'org)
   (require 'ox-json)
   (require 'json)
@@ -150,7 +162,7 @@ CALLBACK is called with normalized document after it is written."
          (document-path (plist-get job :document-path))
          (workspace-name (symbol-name (plist-get job :workspace)))
          (document-id (plist-get job :document-id))
-         (schema-version org-bake-schema-version)
+         (schema-version org-bake-store-schema-version)
          (format-version org-bake-export-format-version)
          (parent-load-path load-path))
     (async-start
@@ -174,7 +186,9 @@ CALLBACK is called with normalized document after it is written."
          (funcall callback document))))))
 
 (defun org-bake-export-queued-job (job &optional callback)
-  "Start async export for queued JOB."
+  "Start async export for queued JOB.
+
+Optional CALLBACK receives exported document."
   (org-bake-export-document-async job callback))
 (defvar org-bake-max-export-jobs)
 (defvar org-bake-export-batch-size)
@@ -303,7 +317,9 @@ CALLBACK is called with normalized document after it is written."
 
 (defun org-bake-export-document-batch-async-backend
     (jobs schema-version format-version)
-  "Worker-side backend exporting JOBS in one child process."
+  "Worker-side backend exporting JOBS in one child process.
+
+SCHEMA-VERSION and FORMAT-VERSION are written into each document."
   (mapcar
    (lambda (job)
      (org-bake-export-document-async-backend
@@ -386,7 +402,9 @@ CALLBACK is called with normalized document after it is written."
       (org-bake-export--dispatch-queued-jobs workspace callback))))
 
 (defun org-bake-export--start-worker (workspace callback)
-  "Start and return one persistent export worker for WORKSPACE."
+  "Start and return one persistent export worker for WORKSPACE.
+
+CALLBACK runs after each completed job."
   (let ((parent-load-path load-path)
         worker)
     (setq
@@ -513,7 +531,9 @@ CALLBACK is called with normalized document after it is written."
     worker))
 
 (defun org-bake-export--ensure-worker-pool (workspace callback)
-  "Ensure WORKSPACE has enough export workers for configured limit."
+  "Ensure WORKSPACE has enough export workers for configured limit.
+
+When non-nil, CALLBACK is registered as workspace export callback."
   (let ((workers (org-bake-export--workspace-workers workspace))
         (limit (max 1 (or org-bake-max-export-jobs 1))))
     (when callback
@@ -556,6 +576,7 @@ Return started jobs list."
     (&optional workspace callback)
   "Start queued export jobs for WORKSPACE up to configured concurrency limit.
 
+When non-nil, CALLBACK is registered and used for started jobs.
 Return jobs started by this dispatch call."
   (if (null workspace)
       (seq-mapcat
@@ -571,7 +592,7 @@ Return jobs started by this dispatch call."
              (org-bake-process-queued-jobs
               workspace 'export-document))))
       (when queued
-        (let* ((schema-version org-bake-schema-version)
+        (let* ((schema-version org-bake-store-schema-version)
                (format-version org-bake-export-format-version)
                (workers
                 (org-bake-export--ensure-worker-pool
@@ -613,7 +634,8 @@ When WORKSPACE is non-nil, stop only workers for that workspace."
 (defun org-bake-export-queued-jobs (&optional workspace callback)
   "Start queued export jobs for WORKSPACE and return newly started jobs.
 
-When WORKSPACE is nil, export queued document jobs from all workspaces."
+When WORKSPACE is nil, export queued document jobs from all workspaces.
+Optional CALLBACK receives each completed job."
   (org-bake-export--dispatch-queued-jobs workspace callback))
 
 (provide 'org-bake-export)

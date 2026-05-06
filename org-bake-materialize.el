@@ -1,5 +1,8 @@
 ;;; org-bake-materialize.el --- Built-in materializers for org-bake  -*- lexical-binding: t; -*-
 
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "29.1") (org "9.6") (async "1.9.9") (ox-json "1"))
+;; URL: https://github.com/bitbloxhub/org-bake
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;;; Commentary:
@@ -9,6 +12,10 @@
 ;;; Code:
 
 (require 'org-bake-process)
+(declare-function org-bake-process-register-materializer
+                  "org-bake-process"
+                  (name &rest properties))
+
 
 (defun org-bake-materialize--json-get (object key)
   "Return KEY from parsed JSON OBJECT."
@@ -80,7 +87,7 @@
   "Build ID to document-id materialization data from DOCUMENTS."
   (org-bake-materialize--id-document-table documents))
 
-(org-bake-register-materializer
+(org-bake-process-register-materializer
  'ids
  :version "v1"
  :builder 'org-bake-materialize-ids-builder
@@ -112,7 +119,7 @@
        table)
       result)))
 
-(org-bake-register-materializer
+(org-bake-process-register-materializer
  'tags
  :version "v1"
  :builder 'org-bake-materialize-tags-builder
@@ -131,7 +138,7 @@
         (puthash document-id path table)))
     table))
 
-(org-bake-register-materializer
+(org-bake-process-register-materializer
  'filepaths
  :version "v1"
  :builder 'org-bake-materialize-filepaths-builder
@@ -241,7 +248,7 @@ Each edge is `(source_id target_id via count)'."
                 edge-list)))
       `((edge_list . ,(vconcat (nreverse edge-list)))))))
 
-(org-bake-register-materializer
+(org-bake-process-register-materializer
  'backlinks
  :version "v1"
  :builder 'org-bake-materialize-backlinks-builder
@@ -250,7 +257,9 @@ Each edge is `(source_id target_id via count)'."
 
 (defun org-bake-materialize--headline-row
     (document-id source-path node)
-  "Return heading row alist from headline NODE."
+  "Return heading row alist from headline NODE.
+
+DOCUMENT-ID and SOURCE-PATH identify source document."
   (let* ((properties
           (org-bake-materialize--json-get node "properties"))
          (drawer (org-bake-materialize--json-get node "drawer"))
@@ -301,7 +310,7 @@ Each edge is `(source_id target_id via count)'."
                        items))))))))
     (vconcat (nreverse items))))
 
-(org-bake-register-materializer
+(org-bake-process-register-materializer
  'headings
  :version "v1"
  :builder 'org-bake-materialize-headings-builder
@@ -386,7 +395,7 @@ DOCUMENT-ID and SOURCE-PATH identify source document."
                      (push item items))))))))))
     (vconcat (nreverse items))))
 
-(org-bake-register-materializer
+(org-bake-process-register-materializer
  'agenda-items
  :version "v1"
  :builder 'org-bake-materialize-agenda-items-builder
