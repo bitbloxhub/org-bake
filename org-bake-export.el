@@ -1,7 +1,6 @@
 ;;; org-bake-export.el --- Org export pipeline for org-bake  -*- lexical-binding: t; -*-
 
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "29.1") (org "9.6") (async "1.9.9") (ox-json "1"))
 ;; URL: https://github.com/bitbloxhub/org-bake
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 

@@ -1,12 +1,14 @@
 ;;; org-bake.el --- Bake Org projects into stable JSON artifacts  -*- lexical-binding: t; -*-
 
-;; Author: bitbloxhub
-;; Maintainer: bitbloxhub
+;; Author: bitbloxhub <https://github.com/bitbloxhub>
+;; Maintainer: bitbloxhub <https://github.com/bitbloxhub>
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "29.1") (org "9.6") (async "1.9.9") (ox-json "1"))
 ;; Keywords: outlines, tools, data
 ;; URL: https://github.com/bitbloxhub/org-bake
 ;; SPDX-License-Identifier: GPL-3.0-or-later
+;; Assisted-by: pi:gpt-5.4
+;; Assisted-by: pi:gpt-5.3-codex
 
 ;;; Commentary:
 
@@ -24,8 +26,6 @@
 (require 'org-bake-materialize)
 (require 'filenotify)
 (require 'seq)
-(defvar org-bake-process-materializer-job-complete-function)
-
 (defgroup org-bake nil
   "Bake Org projects into stable JSON artifacts."
   :group 'tools
@@ -342,8 +342,7 @@ FILE-PATH overrides the default workspace agenda view path."
       (insert "#+title: Org Bake Agenda View\n")
       (insert "\n")
       (insert
-       (format "#+date: [%s]\n\n"
-               (format-time-string "%Y-%m-%d %a %H:%M")))
+       (format "#+date: [%s]\n\n" (format-time-string "%F %a %R")))
       (dolist (item items)
         (let ((scheduled (org-bake-store--json-get item "scheduled"))
               (deadline (org-bake-store--json-get item "deadline"))
@@ -388,7 +387,8 @@ FILE-PATH overrides the default workspace agenda view path."
     path))
 
 (defun org-bake-use-workspace-agenda-file (workspace)
-  "Generate and use WORKSPACE agenda view as sole `org-agenda-files' entry."
+  "Generate and use WORKSPACE agenda view as sole entry in
+variable `org-agenda-files'."
   (interactive (list (org-bake-read-workspace)))
   (let ((path (org-bake-write-workspace-agenda-file workspace)))
     (setq org-agenda-files (list path))
@@ -398,7 +398,8 @@ FILE-PATH overrides the default workspace agenda view path."
     path))
 
 (defun org-bake-refresh-generated-agenda-files ()
-  "Regenerate org-bake agenda files currently present in `org-agenda-files'."
+  "Regenerate org-bake agenda files currently present in
+variable `org-agenda-files'."
   (interactive)
   (let ((agenda-files
          (mapcar #'expand-file-name (org-agenda-files nil 'ifmode))))
@@ -437,8 +438,9 @@ FILE-PATH overrides the default workspace agenda view path."
            (ignore-errors
              (org-bake-write-workspace-agenda-file workspace))))))))
 
-(setq org-bake-process-materializer-job-complete-function
-      #'org-bake--on-materializer-job-complete)
+(defvar org-bake-process-materializer-job-complete-function
+  #'org-bake--on-materializer-job-complete
+  "Callback run when a materializer job completes.")
 
 (defun org-bake--goto-source-heading-by-title
     (title &optional todo-keyword)
@@ -520,16 +522,13 @@ Return non-nil when a matching headline is found."
         (user-error
          "No source metadata on generated agenda entry"))))))
 
-(defun org-bake--setup-agenda-keys ()
-  "Install org-bake agenda keybindings in current `org-agenda-mode' buffer."
+(with-eval-after-load 'org-agenda
   (define-key
    org-agenda-mode-map (kbd "o") #'org-bake-agenda-open-source)
   (when org-bake-agenda-remap-ret
     (define-key
      org-agenda-mode-map (kbd "RET") #'org-bake-agenda-open-source))
   (define-key org-agenda-mode-map (kbd "g") #'org-bake-agenda-redo))
-
-(add-hook 'org-agenda-mode-hook #'org-bake--setup-agenda-keys)
 
 (defun org-bake--org-id-find-id-file-advice (orig-fn id)
   "Advice for `org-id-find-id-file' using ORIG-FN and materialized ID fallback."
@@ -790,13 +789,12 @@ NEW-VALUE and OPERATION come from `add-variable-watcher'."
     (setq org-bake--startup-indexer-scheduled t)
     (run-with-timer 0 nil (lambda () (org-bake-start-indexer)))))
 
-(if after-init-time
+(if (bound-and-true-p after-init-time)
     (org-bake-schedule-startup-indexer)
   (add-hook 'after-init-hook #'org-bake-schedule-startup-indexer))
 
-(when (fboundp 'add-variable-watcher)
-  (add-variable-watcher
-   'org-bake-workspaces #'org-bake--workspaces-watcher))
+(add-variable-watcher
+ 'org-bake-workspaces #'org-bake--workspaces-watcher)
 
 (when org-bake-org-id-use-materialized-ids
   (org-bake-enable-org-id-materialized-resolution))
