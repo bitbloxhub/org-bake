@@ -8,7 +8,7 @@ org-bake keeps Org workspaces indexed in background, writes stable JSON artifact
 - You want generated agenda views and fast ID/backlink lookups
 
 * Install
-Load package and set at least one workspace.
+Load package, set at least one workspace, then enable =org-bake-mode=.
 Requires these Emacs packages:
 - =async= (aka emacs-async)
 - =ox-json= from [[https://github.com/bitbloxhub/ox-json/tree/toplevel-properties][bitbloxhub/ox-json @ toplevel-properties]]
@@ -20,7 +20,7 @@ Requires these Emacs packages:
   (org-bake-workspaces
    '((main :roots ("~/org"))))
   :config
-  (org-bake-start-indexer))
+  (org-bake-mode 1))
 #+end_src
 Workspace format:
 #+begin_src emacs-lisp
@@ -29,6 +29,7 @@ Workspace format:
 
 * Day-to-day usage
 Main commands:
+- =M-x org-bake-mode= :: toggle runtime hooks/advice/watchers and startup scheduling
 - =M-x org-bake-start-indexer= :: start background indexing and file watches
 - =M-x org-bake-stop-indexer= :: stop indexer and watchers
 - =M-x org-bake-refresh-workspace= :: scan workspace and export stale docs

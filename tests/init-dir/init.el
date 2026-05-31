@@ -16,4 +16,5 @@
   (setq org-bake-store-root nil)
   (setq org-bake-workspaces
         `((test :roots (,(expand-file-name "../org" init-dir))))))
+(org-bake-mode 1)
 (org-bake-use-workspace-agenda-file 'test)

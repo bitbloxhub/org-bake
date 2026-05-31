@@ -12,10 +12,13 @@
 
 ;;; Commentary:
 
-;; Public entrypoint for org-bake.
+;; org-bake keeps configured Org workspaces incrementally exported to stable JSON
+;; documents, then builds async materialized views from those documents
+;; (for example ids, agenda rows, and other derived indexes).
 ;;
-;; This file wires together the main subsystems and exposes the primary
-;; user-facing commands and customization options.
+;; Runtime behavior is controlled by `org-bake-mode': enabling mode installs
+;; watchers/advice/startup scheduling; disabling mode removes them and stops
+;; background workers.
 
 ;;; Code:
 
@@ -579,6 +582,45 @@ Falls back to materialized ID lookup."
       (advice-remove #'org-id-find #'org-bake--org-id-find-advice)))
   (setq org-bake--org-id-materialized-advice-enabled nil))
 
+(defvar org-bake--mode-after-init-hook-added nil
+  "Non-nil when `org-bake-schedule-startup-indexer' is in `after-init-hook'.")
+
+(defun org-bake--enable-runtime ()
+  "Enable org-bake runtime side effects for `org-bake-mode'."
+  (add-variable-watcher
+   'org-bake-workspaces #'org-bake--workspaces-watcher)
+  (unless org-bake--mode-after-init-hook-added
+    (add-hook 'after-init-hook #'org-bake-schedule-startup-indexer)
+    (setq org-bake--mode-after-init-hook-added t))
+  (when (and org-bake-org-id-use-materialized-ids
+             (not org-bake--org-id-materialized-advice-enabled))
+    (org-bake-enable-org-id-materialized-resolution))
+  (if (bound-and-true-p after-init-time)
+      (org-bake-schedule-startup-indexer)))
+
+(defun org-bake--disable-runtime ()
+  "Disable org-bake runtime side effects for `org-bake-mode'."
+  (when org-bake--mode-after-init-hook-added
+    (remove-hook 'after-init-hook #'org-bake-schedule-startup-indexer)
+    (setq org-bake--mode-after-init-hook-added nil))
+  (remove-variable-watcher
+   'org-bake-workspaces #'org-bake--workspaces-watcher)
+  (org-bake-disable-org-id-materialized-resolution)
+  (org-bake-stop-indexer))
+
+(define-minor-mode org-bake-mode
+  "Toggle org-bake background indexing runtime.
+
+When enabled, org-bake installs runtime hooks/advice/watchers and can
+schedule startup indexing for configured workspaces.  When disabled,
+runtime side effects are removed and background workers stop."
+  :global t
+  :group
+  'org-bake
+  (if org-bake-mode
+      (org-bake--enable-runtime)
+    (org-bake--disable-runtime)))
+
 
 (defun org-bake--workspaces-watcher
     (_symbol new-value operation _where)
@@ -788,16 +830,6 @@ NEW-VALUE and OPERATION come from `add-variable-watcher'."
              (not org-bake--startup-indexer-scheduled))
     (setq org-bake--startup-indexer-scheduled t)
     (run-with-timer 0 nil (lambda () (org-bake-start-indexer)))))
-
-(if (bound-and-true-p after-init-time)
-    (org-bake-schedule-startup-indexer)
-  (add-hook 'after-init-hook #'org-bake-schedule-startup-indexer))
-
-(add-variable-watcher
- 'org-bake-workspaces #'org-bake--workspaces-watcher)
-
-(when org-bake-org-id-use-materialized-ids
-  (org-bake-enable-org-id-materialized-resolution))
 
 
 (provide 'org-bake)

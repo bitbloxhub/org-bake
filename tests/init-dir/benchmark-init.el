@@ -44,4 +44,5 @@
             0.0)))
   (setq org-bake-store-root
         (expand-file-name ".bench-store/" workspace-root))
-  (setq org-bake-workspaces `((bench :roots (,workspace-root)))))
+  (setq org-bake-workspaces `((bench :roots (,workspace-root))))
+  (org-bake-mode 1))
